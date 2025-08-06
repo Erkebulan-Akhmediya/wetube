@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"wetube/database"
@@ -25,8 +28,25 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := database.Db().QueryRow(`select id from "user" where username = $1`, dto.Username).Scan()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "User already exists", http.StatusBadRequest)
+		return
+	}
+
+	pwd, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+		http.Error(w, "Password is too long", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	query := `INSERT INTO "user" (username, password) VALUES ($1, $2)`
-	if _, err := database.Db().Exec(query, dto.Username, dto.Password); err != nil {
+	if _, err = database.Db().Exec(query, dto.Username, string(pwd)); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
