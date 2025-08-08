@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"wetube/auth"
 	"wetube/database"
+	"wetube/users"
 )
 
 func main() {
@@ -16,6 +17,11 @@ func main() {
 			log.Fatal("Error closing db: " + err.Error())
 		}
 	}()
-	auth.Router()
+	registerRoutes()
 	log.Fatal(http.ListenAndServe(":2121", nil))
+}
+
+func registerRoutes() {
+	auth.RegisterRoutes()
+	users.RegisterRoutes()
 }

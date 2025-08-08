@@ -4,24 +4,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
-	"os"
-	"time"
+	"wetube/jwt"
 	"wetube/users"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type authDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-type jwtClaims struct {
-	Id       int    `json:"id"`
-	Username string `json:"username"`
-	jwt.RegisteredClaims
 }
 
 type jwtDto struct {
@@ -87,7 +80,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := createJwt(user)
+	token, err := jwt.Create(user.Id, user.Password)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -100,31 +93,4 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func getAuthDto(r *http.Request) (*authDto, int, error) {
-	if r.Method != "POST" {
-		return nil, http.StatusMethodNotAllowed, errors.New("method not allowed")
-	}
-
-	var dto authDto
-	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-	return &dto, http.StatusOK, nil
-}
-
-func createJwt(user *users.User) (string, error) {
-	claims := &jwtClaims{
-		Id: user.Id,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
-			Issuer:    "wetube",
-			Subject:   user.Username,
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secretKey := os.Getenv("JWT_SECRET_KEY")
-	return token.SignedString([]byte(secretKey))
 }
