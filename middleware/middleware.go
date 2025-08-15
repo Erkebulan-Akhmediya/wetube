@@ -5,14 +5,14 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"wetube/jwt"
+	"wetube/auth/service"
 )
 
 func Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		userId, err := jwt.Validate(tokenStr)
+		userId, err := service.Validate(tokenStr)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Access denied", http.StatusUnauthorized)

@@ -1,8 +1,11 @@
 package auth
 
-import "net/http"
+import (
+	"net/http"
+	"wetube/auth/controller"
+)
 
 func RegisterRoutes() {
-	http.HandleFunc("/sign-up", signUp)
-	http.HandleFunc("/sign-in", signIn)
+	http.HandleFunc("/sign-up", controller.SignUp)
+	http.HandleFunc("/sign-in", controller.SignIn)
 }

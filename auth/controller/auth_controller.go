@@ -1,4 +1,4 @@
-package auth
+package controller
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"wetube/jwt"
+	authService "wetube/auth/service"
 	"wetube/users/service"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,7 +21,7 @@ type jwtDto struct {
 	Token string `json:"token"`
 }
 
-func signUp(w http.ResponseWriter, r *http.Request) {
+func SignUp(w http.ResponseWriter, r *http.Request) {
 	dto, code, err := getAuthDto(r)
 	if err != nil {
 		log.Println(err)
@@ -60,7 +60,7 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func signIn(w http.ResponseWriter, r *http.Request) {
+func SignIn(w http.ResponseWriter, r *http.Request) {
 	dto, code, err := getAuthDto(r)
 	if err != nil {
 		log.Println(err)
@@ -80,7 +80,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := jwt.Create(user.Id, user.Password)
+	token, err := authService.Create(user.Id, user.Password)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -93,4 +93,16 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+}
+
+func getAuthDto(r *http.Request) (*authDto, int, error) {
+	if r.Method != "POST" {
+		return nil, http.StatusMethodNotAllowed, errors.New("method not allowed")
+	}
+
+	var dto authDto
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+	return &dto, http.StatusOK, nil
 }
