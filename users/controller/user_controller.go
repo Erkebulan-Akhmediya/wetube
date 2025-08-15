@@ -1,4 +1,4 @@
-package users
+package controller
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"wetube/users/service"
 )
 
 type updatePasswordDto struct {
@@ -17,12 +18,13 @@ type updatePasswordDto struct {
 }
 
 type userDto struct {
-	Id        int       `json:"id"`
-	Username  string    `json:"username"`
-	CreatedAt time.Time `json:"createdAt"`
+	Id        int    `json:"id"`
+	Username  string `json:"username"`
+	CreatedAt string `json:"createdAt"`
+	DeletedAt string `json:"deletedAt,omitempty"`
 }
 
-func updatePassword(w http.ResponseWriter, r *http.Request) {
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "PATCH" {
 		http.Error(w, "Request method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -42,7 +44,7 @@ func updatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId := r.Context().Value("userId").(int)
-	user, err := GetById(userId)
+	user, err := service.GetById(userId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -67,7 +69,7 @@ func updatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Password = string(newPassword)
-	if err = Update(user); err != nil {
+	if err = service.Update(user); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -76,11 +78,7 @@ func updatePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func getById(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Request method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+func User(w http.ResponseWriter, r *http.Request) {
 	userIdStr := r.PathValue("userId")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
@@ -89,21 +87,49 @@ func getById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := GetById(userId)
+	user, err := service.GetById(userId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
-	dto := userDto{
-		Id:        user.Id,
-		Username:  user.Username,
-		CreatedAt: user.CreatedAt,
+	if r.Method == "GET" {
+		getById(w, user)
+	} else if r.Method == "DELETE" {
+		deleteUser(w, user)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-	if err = json.NewEncoder(w).Encode(dto); err != nil {
+}
+
+func getById(w http.ResponseWriter, user *service.User) {
+	dto := newUserDto(user)
+	if err := json.NewEncoder(w).Encode(dto); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+}
+
+func newUserDto(user *service.User) *userDto {
+	dto := userDto{
+		Id:        user.Id,
+		Username:  user.Username,
+		CreatedAt: user.CreatedAt.Format(time.DateOnly),
+	}
+	if user.DeletedAt.Valid {
+		dto.DeletedAt = user.DeletedAt.Time.Format(time.DateOnly)
+	}
+	return &dto
+}
+
+func deleteUser(w http.ResponseWriter, user *service.User) {
+	user.DeletedAt.Time = time.Now()
+	user.DeletedAt.Valid = true
+	if err := service.Update(user); err != nil {
+		log.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

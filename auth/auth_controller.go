@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"wetube/jwt"
-	"wetube/users"
+	"wetube/users/service"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,7 +29,7 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := users.GetByUsername(dto.Username)
+	user, err := service.GetByUsername(dto.Username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -51,7 +51,7 @@ func signUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = users.Create(dto.Username, string(pwd)); err != nil {
+	if err = service.Create(dto.Username, string(pwd)); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -67,7 +67,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), code)
 		return
 	}
-	user, err := users.GetByUsername(dto.Username)
+	user, err := service.GetByUsername(dto.Username)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Username or password incorrect", http.StatusBadRequest)

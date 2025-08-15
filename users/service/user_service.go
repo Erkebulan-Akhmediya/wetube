@@ -1,31 +1,35 @@
-package users
+package service
 
 import (
+	"database/sql"
 	"time"
 	"wetube/database"
 )
+
+const baseSelect = `select id, username, password, created_at, deleted_at from "user"`
 
 type User struct {
 	Id        int
 	Username  string
 	Password  string
 	CreatedAt time.Time
+	DeletedAt sql.NullTime
 }
 
 func GetById(id int) (*User, error) {
-	query := `select id, username, password, created_at from "user" where id = $1`
+	query := baseSelect + " where id = $1"
 	return get(query, id)
 }
 
 func GetByUsername(username string) (*User, error) {
-	query := `select id, username, password, created_at from "user" where username = $1`
+	query := baseSelect + " where username = $1"
 	return get(query, username)
 }
 
 func get(query string, args ...any) (*User, error) {
 	var user User
 	row := database.Db().QueryRow(query, args...)
-	if err := row.Scan(&user.Id, &user.Username, &user.Password, &user.CreatedAt); err != nil {
+	if err := row.Scan(&user.Id, &user.Username, &user.Password, &user.CreatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -38,7 +42,7 @@ func Create(username string, password string) error {
 }
 
 func Update(user *User) error {
-	query := `UPDATE "user" SET username = $1, password = $2 where id = $3`
-	_, err := database.Db().Exec(query, user.Username, user.Password, user.Id)
+	query := `UPDATE "user" SET username = $1, password = $2, deleted_at = $3 where id = $4`
+	_, err := database.Db().Exec(query, user.Username, user.Password, user.DeletedAt, user.Id)
 	return err
 }
