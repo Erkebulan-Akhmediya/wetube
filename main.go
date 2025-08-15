@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 	"wetube/auth"
 	"wetube/database"
 	"wetube/users"
+	"wetube/users/service"
 )
 
 func main() {
@@ -18,7 +25,39 @@ func main() {
 		}
 	}()
 	registerRoutes()
-	log.Fatal(http.ListenAndServe(":2121", nil))
+
+	server := http.Server{Addr: ":2121"}
+
+	cleanupCtx, cleanupCancel := context.WithCancel(context.Background())
+
+	go service.CheckForDeletes(cleanupCtx, time.Second*30)
+
+	go func() {
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("Server error: %v\n", err)
+			cleanupCancel()
+		}
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case <-signalChan:
+		log.Println("Shut down signal received")
+	case <-cleanupCtx.Done():
+		log.Println("Context done")
+	}
+
+	cleanupCancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Println("Server Shutdown:", err)
+	}
+	log.Println("Server exiting")
 }
 
 func registerRoutes() {
