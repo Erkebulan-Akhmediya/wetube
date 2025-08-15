@@ -7,4 +7,5 @@ import (
 
 func RegisterRoutes() {
 	http.HandleFunc("/users/update/password", middleware.Auth(updatePassword))
+	http.HandleFunc("/users/{userId}", middleware.Auth(getById))
 }

@@ -3,16 +3,23 @@ package users
 import (
 	"encoding/json"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"log"
 	"net/http"
-
-	"golang.org/x/crypto/bcrypt"
+	"strconv"
+	"time"
 )
 
 type updatePasswordDto struct {
 	OldPassword string `json:"oldPassword"`
 	NewPassword string `json:"newPassword"`
+}
+
+type userDto struct {
+	Id        int       `json:"id"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func updatePassword(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +74,36 @@ func updatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	if _, err = io.WriteString(w, "Update password successfully"); err != nil {
+}
+
+func getById(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Request method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userIdStr := r.PathValue("userId")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
 		log.Println(err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	user, err := GetById(userId)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	dto := userDto{
+		Id:        user.Id,
+		Username:  user.Username,
+		CreatedAt: user.CreatedAt,
+	}
+	if err = json.NewEncoder(w).Encode(dto); err != nil {
+		log.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 }
