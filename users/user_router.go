@@ -2,7 +2,7 @@ package users
 
 import (
 	"net/http"
-	"wetube/middleware"
+	"wetube/auth/middleware"
 	"wetube/users/controller"
 )
 
