@@ -68,5 +68,7 @@ func CheckForDeletes(ctx context.Context, interval time.Duration) {
 }
 
 func permanentlyDelete() error {
-	return nil
+	query := `DELETE FROM "user" WHERE deleted_at < CURRENT_DATE - INTERVAL '30 days'`
+	_, err := database.Db().Exec(query)
+	return err
 }
