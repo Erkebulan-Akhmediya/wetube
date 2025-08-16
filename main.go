@@ -12,8 +12,10 @@ import (
 	"wetube/auth"
 	"wetube/channel"
 	"wetube/database"
+	"wetube/role"
+	roleService "wetube/role/service"
 	"wetube/users"
-	"wetube/users/service"
+	userService "wetube/users/service"
 )
 
 func main() {
@@ -27,11 +29,15 @@ func main() {
 	}()
 	registerRoutes()
 
+	if err := roleService.CreateAll(); err != nil {
+		log.Println("Error creating role: " + err.Error())
+	}
+
 	server := http.Server{Addr: ":2121"}
 
 	cleanupCtx, cleanupCancel := context.WithCancel(context.Background())
 
-	go service.CheckForDeletes(cleanupCtx, time.Hour*24*30)
+	go userService.CheckForDeletes(cleanupCtx, time.Hour*24*30)
 
 	go func() {
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
@@ -65,4 +71,5 @@ func registerRoutes() {
 	auth.RegisterRoutes()
 	users.RegisterRoutes()
 	channel.RegisterRoutes()
+	role.RegisterRoutes()
 }
