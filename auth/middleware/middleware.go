@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"wetube/auth/service"
+	userService "wetube/users/service"
 )
 
 func Auth(next http.HandlerFunc) http.HandlerFunc {
@@ -15,6 +16,17 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 		userId, err := service.Validate(tokenStr)
 		if err != nil {
 			log.Println(err)
+			http.Error(w, "Access denied", http.StatusUnauthorized)
+			return
+		}
+
+		user, err := userService.GetById(userId)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Access denied", http.StatusUnauthorized)
+			return
+		}
+		if user.DeletedAt.Valid {
 			http.Error(w, "Access denied", http.StatusUnauthorized)
 			return
 		}
