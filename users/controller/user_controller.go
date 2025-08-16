@@ -133,3 +133,34 @@ func deleteUser(w http.ResponseWriter, user *service.User) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+func Restore(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PATCH" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	userIdStr := r.PathValue("userId")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid User ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := service.GetById(userId)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	user.DeletedAt.Valid = false
+	if err = service.Update(user); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

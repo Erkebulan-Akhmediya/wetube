@@ -74,6 +74,11 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.DeletedAt.Valid {
+		http.Error(w, "Your account has been deleted", http.StatusBadRequest)
+		return
+	}
+
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password)); err != nil {
 		log.Println(err)
 		http.Error(w, "Username or password incorrect", http.StatusBadRequest)
