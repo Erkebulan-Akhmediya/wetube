@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 	"wetube/auth"
+	"wetube/channel"
 	"wetube/database"
 	"wetube/users"
 	"wetube/users/service"
@@ -30,7 +31,7 @@ func main() {
 
 	cleanupCtx, cleanupCancel := context.WithCancel(context.Background())
 
-	go service.CheckForDeletes(cleanupCtx, time.Second*30)
+	go service.CheckForDeletes(cleanupCtx, time.Hour*24*30)
 
 	go func() {
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
@@ -63,4 +64,5 @@ func main() {
 func registerRoutes() {
 	auth.RegisterRoutes()
 	users.RegisterRoutes()
+	channel.RegisterRoutes()
 }
