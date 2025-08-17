@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,70 +11,12 @@ import (
 	"wetube/users/service"
 )
 
-type updatePasswordDto struct {
-	OldPassword string `json:"oldPassword"`
-	NewPassword string `json:"newPassword"`
-}
-
 type userDto struct {
-	Id        int    `json:"id"`
+	Id        int    `json:"id,omitempty"`
 	Username  string `json:"username"`
+	Password  string `json:"password,omitempty"`
 	CreatedAt string `json:"createdAt"`
 	DeletedAt string `json:"deletedAt,omitempty"`
-}
-
-func UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PATCH" {
-		http.Error(w, "Request method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var dto updatePasswordDto
-	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		log.Println(err)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
-	if dto.OldPassword == dto.NewPassword {
-		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, "Passwords are identical")
-		return
-	}
-
-	userId := r.Context().Value("userId").(int)
-	user, err := service.GetById(userId)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.OldPassword)); err != nil {
-		log.Println(err)
-		http.Error(w, "Password incorrect", http.StatusBadRequest)
-		return
-	}
-
-	newPassword, err := bcrypt.GenerateFromPassword([]byte(dto.NewPassword), bcrypt.DefaultCost)
-	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
-		http.Error(w, "Password too long", http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	user.Password = string(newPassword)
-	if err = service.Update(user); err != nil {
-		log.Println(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func User(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +38,8 @@ func User(w http.ResponseWriter, r *http.Request) {
 		getById(w, user)
 	} else if r.Method == "DELETE" {
 		deleteUser(w, user)
+	} else if r.Method == "PUT" {
+		update(w, r, user)
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -132,6 +75,55 @@ func deleteUser(w http.ResponseWriter, user *service.User) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func update(w http.ResponseWriter, r *http.Request, user *service.User) {
+	var dto userDto
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if dto.Password != "" {
+		newPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+			http.Error(w, "Password too long", http.StatusBadRequest)
+			return
+		}
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		user.Password = string(newPassword)
+	}
+
+	user.Username = dto.Username
+
+	if dto.DeletedAt != "" {
+		deletedAt, err := time.Parse(time.DateOnly, dto.DeletedAt)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Invalid date for deleted_at: "+dto.DeletedAt, http.StatusBadRequest)
+			return
+		}
+		user.DeletedAt.Valid = true
+		user.DeletedAt.Time = deletedAt
+	}
+
+	if err := service.Update(user); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	updatedDto := newUserDto(user)
+	if err := json.NewEncoder(w).Encode(updatedDto); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func Restore(w http.ResponseWriter, r *http.Request) {
