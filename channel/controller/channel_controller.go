@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"wetube/channel/service"
+	channelService "wetube/channel/service"
+	userService "wetube/users/service"
 )
 
 type createChannelDto struct {
@@ -17,7 +18,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId := r.Context().Value("userId").(int)
+	user := r.Context().Value("user").(userService.User)
 
 	var dto createChannelDto
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
@@ -26,7 +27,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := service.Create(dto.Name, userId); err != nil {
+	if err := channelService.Create(dto.Name, user.Id); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
