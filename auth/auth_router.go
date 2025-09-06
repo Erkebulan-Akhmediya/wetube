@@ -6,6 +6,6 @@ import (
 )
 
 func RegisterRoutes() {
-	http.HandleFunc("/sign-up", controller.SignUp)
-	http.HandleFunc("/sign-in", controller.SignIn)
+	http.Handle("/sign-up", controller.NewSignUpHandler())
+	http.Handle("/sign-in", controller.NewSignInHandler())
 }
