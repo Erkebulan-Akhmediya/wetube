@@ -2,8 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/lib/pq"
 	"wetube/database"
+
+	"github.com/lib/pq"
 )
 
 const baseSelect = `

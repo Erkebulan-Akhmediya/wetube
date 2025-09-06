@@ -3,38 +3,36 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 	"wetube/users/service"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-func User(w http.ResponseWriter, r *http.Request) {
+func getUserFromUrl(r *http.Request) (*service.User, error) {
 	userIdStr := r.PathValue("userId")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
+		return nil, err
 	}
+	return service.GetById(userId)
+}
 
-	user, err := service.GetById(userId)
+func GetById(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromUrl(r)
 	if err != nil {
 		log.Println(err)
+		if errors.As(err, &err) {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	if r.Method == "GET" {
-		getById(w, user)
-	} else if r.Method == "DELETE" {
-		deleteUser(w, user)
-	} else if r.Method == "PUT" {
-		update(w, r, user)
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
+	getById(w, user)
 }
 
 func getById(w http.ResponseWriter, user *service.User) {
@@ -46,6 +44,20 @@ func getById(w http.ResponseWriter, user *service.User) {
 	}
 }
 
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromUrl(r)
+	if err != nil {
+		log.Println(err)
+		if errors.As(err, &err) {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	deleteUser(w, user)
+}
+
 func deleteUser(w http.ResponseWriter, user *service.User) {
 	user.DeletedAt.Time = time.Now()
 	user.DeletedAt.Valid = true
@@ -55,6 +67,20 @@ func deleteUser(w http.ResponseWriter, user *service.User) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func Update(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromUrl(r)
+	if err != nil {
+		log.Println(err)
+		if errors.As(err, &err) {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	update(w, r, user)
 }
 
 func update(w http.ResponseWriter, r *http.Request, user *service.User) {

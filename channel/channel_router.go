@@ -7,5 +7,5 @@ import (
 )
 
 func RegisterRoutes() {
-	http.HandleFunc("/channel", middleware.Auth(controller.Create))
+	http.HandleFunc("/channel", middleware.AuthFunc(controller.Create))
 }
