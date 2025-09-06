@@ -12,7 +12,13 @@ type createChannelDto struct {
 	Name string `json:"name"`
 }
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func NewCreateHandler() http.Handler {
+	return &createHandler{}
+}
+
+type createHandler struct{}
+
+func (ch *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
