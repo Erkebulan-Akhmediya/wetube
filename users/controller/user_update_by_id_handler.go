@@ -18,14 +18,9 @@ func NewUpdateByIdHandler() http.Handler {
 type updateByIdHandler struct{}
 
 func (uh *updateByIdHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserFromUrl(r)
-	if err != nil {
-		log.Println(err)
-		if errors.As(err, &err) {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	user, ok := r.Context().Value("urlUser").(*service.User)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	updateById(w, r, user)
