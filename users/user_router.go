@@ -2,7 +2,8 @@ package users
 
 import (
 	"net/http"
-	"wetube/auth/middleware"
+	authMiddleware "wetube/auth/middleware"
+	"wetube/role"
 	"wetube/users/controller"
 	"wetube/utils"
 )
@@ -13,6 +14,10 @@ func RegisterRoutes() {
 		http.MethodDelete: controller.NewDeleteByIdHandler(),
 		http.MethodPut:    controller.NewUpdateByIdHandler(),
 	}
-	http.Handle("/users/{userId}", middleware.NewAuthMiddleware(userHandler))
-	http.Handle("/users/{userId}/restore", middleware.NewAuthMiddleware(controller.NewRestoreHandler()))
+	http.Handle("/users/{userId}", authMiddleware.NewAuthMiddleware(userHandler))
+
+	restoreHandler := controller.NewRestoreHandler()
+	restoreHandler = role.NewRoleMiddleware([]string{"admin"}, restoreHandler)
+	restoreHandler = authMiddleware.NewAuthMiddleware(restoreHandler)
+	http.Handle("/users/{userId}/restore", restoreHandler)
 }

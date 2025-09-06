@@ -22,7 +22,8 @@ type roleMiddleware struct {
 }
 
 func (rh *roleMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(userService.User)
+	rawUser := r.Context().Value("user")
+	user, ok := rawUser.(*userService.User)
 	if !ok {
 		w.WriteHeader(http.StatusForbidden)
 		return
