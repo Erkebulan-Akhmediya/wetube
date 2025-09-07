@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 	"wetube/database"
+	roleService "wetube/role/service"
 )
 
 type User struct {
@@ -40,18 +41,7 @@ func Create(username, password string, roles []string) error {
 		return err
 	}
 
-	query = "INSERT INTO users_roles (user_id, role_name) VALUES "
-	args := make([]interface{}, len(roles)+1)
-	args[0] = userId
-	for i, role := range roles {
-		if i > 0 {
-			query += ", "
-		}
-		args[i+1] = role
-		query += fmt.Sprintf("($1, $%d)", i+2)
-	}
-	_, err = tx.Exec(query, args...)
-	if err != nil {
+	if err = roleService.AddUserRoles(tx, userId, roles); err != nil {
 		return err
 	}
 
