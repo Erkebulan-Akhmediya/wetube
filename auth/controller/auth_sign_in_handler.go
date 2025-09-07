@@ -49,7 +49,7 @@ func (sh *signInHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(jwtDto{Token: token}); err != nil {
+	if err = json.NewEncoder(w).Encode(jwtDto{Token: token, Id: user.Id}); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

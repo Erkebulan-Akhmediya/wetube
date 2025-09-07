@@ -7,4 +7,5 @@ type authDto struct {
 
 type jwtDto struct {
 	Token string `json:"token"`
+	Id    int    `json:"id"`
 }

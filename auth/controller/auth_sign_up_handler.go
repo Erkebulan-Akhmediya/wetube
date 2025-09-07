@@ -46,7 +46,7 @@ func (sh *signUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = service.Create(dto.Username, string(pwd)); err != nil {
+	if err = service.Create(dto.Username, string(pwd), []string{"user"}); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

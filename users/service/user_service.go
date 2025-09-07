@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 	"wetube/database"
+	roleService "wetube/role/service"
 )
 
 type User struct {
@@ -17,10 +19,33 @@ type User struct {
 	Roles     []string
 }
 
-func Create(username string, password string) error {
-	query := `INSERT INTO "user" (username, password) VALUES ($1, $2)`
-	_, err := database.Db().Exec(query, username, password)
-	return err
+func Create(username, password string, roles []string) error {
+	if roles == nil || len(roles) == 0 {
+		return fmt.Errorf("no roles were provided for user with username %s", username)
+	}
+
+	tx, err := database.Db().Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var userId int
+	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
+	if err = tx.QueryRow(query, username, password).Scan(&userId); err != nil {
+		return err
+	}
+
+	if err = roleService.AddUserRoles(tx, userId, roles); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func Update(user *User) error {
