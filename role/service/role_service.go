@@ -36,3 +36,26 @@ func AddUserRoles(tx *sql.Tx, userId int, roles []string) error {
 	_, err := tx.Exec(query, args...)
 	return err
 }
+
+func UpdateUserRoles(userId int, roles []string) error {
+	tx, err := database.Db().Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if err = DeleteAllByUserId(tx, userId); err != nil {
+		return err
+	}
+
+	if err = AddUserRoles(tx, userId, roles); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
