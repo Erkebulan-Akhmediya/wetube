@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 	"wetube/database"
@@ -17,10 +18,44 @@ type User struct {
 	Roles     []string
 }
 
-func Create(username string, password string) error {
-	query := `INSERT INTO "user" (username, password) VALUES ($1, $2)`
-	_, err := database.Db().Exec(query, username, password)
-	return err
+func Create(username, password string, roles []string) error {
+	if roles == nil || len(roles) == 0 {
+		return fmt.Errorf("no roles were provided for user with username %s", username)
+	}
+
+	tx, err := database.Db().Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var userId int
+	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
+	if err = tx.QueryRow(query, username, password).Scan(&userId); err != nil {
+		return err
+	}
+
+	query = "INSERT INTO users_roles (user_id, role_name) VALUES "
+	args := make([]interface{}, len(roles)+1)
+	args[0] = userId
+	for i, role := range roles {
+		if i > 0 {
+			query += ", "
+		}
+		args[i+1] = role
+		query += fmt.Sprintf("($1, $%d)", i+2)
+	}
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func Update(user *User) error {
