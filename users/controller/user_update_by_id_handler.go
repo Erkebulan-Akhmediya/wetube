@@ -35,30 +35,17 @@ func updateById(w http.ResponseWriter, r *http.Request, user *service.User) {
 	}
 
 	if dto.Password != "" {
-		newPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
-		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
-			http.Error(w, "Password too long", http.StatusBadRequest)
+		if ok := updatePassword(w, user, &dto); !ok {
 			return
 		}
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		user.Password = string(newPassword)
 	}
 
 	user.Username = dto.Username
 
 	if dto.DeletedAt != "" {
-		deletedAt, err := time.Parse(time.DateOnly, dto.DeletedAt)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "Invalid date for deleted_at: "+dto.DeletedAt, http.StatusBadRequest)
+		if ok := updateDeletedAt(w, user, &dto); !ok {
 			return
 		}
-		user.DeletedAt.Valid = true
-		user.DeletedAt.Time = deletedAt
 	}
 
 	if err := service.Update(user); err != nil {
@@ -73,4 +60,31 @@ func updateById(w http.ResponseWriter, r *http.Request, user *service.User) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func updatePassword(w http.ResponseWriter, user *service.User, dto *userDto) bool {
+	newPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+		http.Error(w, "Password too long", http.StatusBadRequest)
+		return false
+	}
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return false
+	}
+	user.Password = string(newPassword)
+	return true
+}
+
+func updateDeletedAt(w http.ResponseWriter, user *service.User, dto *userDto) bool {
+	deletedAt, err := time.Parse(time.DateOnly, dto.DeletedAt)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid date for deleted_at: "+dto.DeletedAt, http.StatusBadRequest)
+		return false
+	}
+	user.DeletedAt.Valid = true
+	user.DeletedAt.Time = deletedAt
+	return true
 }
