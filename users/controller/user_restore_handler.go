@@ -14,11 +14,6 @@ func NewRestoreHandler() http.Handler {
 type restoreHandler struct{}
 
 func (rh *restoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PATCH" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	userIdStr := r.PathValue("userId")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
