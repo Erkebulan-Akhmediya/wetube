@@ -32,5 +32,8 @@ func registerRestoreHandler() {
 	restoreHandler := controller.NewRestoreHandler()
 	restoreHandler = role.NewRoleMiddleware([]string{"admin"}, restoreHandler)
 	restoreHandler = authMiddleware.NewAuthMiddleware(restoreHandler)
+	restoreHandler = utils.MethodHandler{
+		http.MethodPatch: restoreHandler,
+	}
 	http.Handle("/users/{userId}/restore", restoreHandler)
 }
