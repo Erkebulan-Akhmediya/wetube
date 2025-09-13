@@ -19,13 +19,7 @@ func NewCreateHandler() http.Handler {
 type createHandler struct{}
 
 func (ch *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	user := r.Context().Value("user").(userService.User)
-
 	var dto createChannelDto
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		log.Println(err)
