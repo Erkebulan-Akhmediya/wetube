@@ -19,9 +19,9 @@ type User struct {
 	Roles     []string
 }
 
-func Create(username, password string, roles []string) error {
-	if roles == nil || len(roles) == 0 {
-		return fmt.Errorf("no roles were provided for user with username %s", username)
+func Create(user *User) error {
+	if user.Roles == nil || len(user.Roles) == 0 {
+		return fmt.Errorf("no roles were provided for user with username %s", user.Username)
 	}
 
 	tx, err := database.Db().Begin()
@@ -37,11 +37,11 @@ func Create(username, password string, roles []string) error {
 
 	var userId int
 	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
-	if err = tx.QueryRow(query, username, password).Scan(&userId); err != nil {
+	if err = tx.QueryRow(query, user.Username, user.Password).Scan(&userId); err != nil {
 		return err
 	}
 
-	if err = roleService.AddUserRoles(tx, userId, roles); err != nil {
+	if err = roleService.AddUserRoles(tx, userId, user.Roles); err != nil {
 		return err
 	}
 

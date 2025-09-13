@@ -1,5 +1,9 @@
 package controller
 
+import (
+	"mime/multipart"
+)
+
 type authDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -8,4 +12,11 @@ type authDto struct {
 type jwtDto struct {
 	Token string `json:"token"`
 	Id    int    `json:"id"`
+}
+
+type signUpDto struct {
+	username  string
+	password  string
+	pfp       multipart.File
+	pfpHeader *multipart.FileHeader
 }

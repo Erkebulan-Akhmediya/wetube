@@ -17,14 +17,12 @@ func NewSignUpHandler() http.Handler {
 type signUpHandler struct{}
 
 func (sh *signUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dto, code, err := getAuthDto(r)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), code)
+	dto, ok := getSignUpDto(w, r)
+	if !ok {
 		return
 	}
 
-	user, err := service.GetByUsername(dto.Username)
+	user, err := service.GetByUsername(dto.username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -35,7 +33,7 @@ func (sh *signUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pwd, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	pwd, err := bcrypt.GenerateFromPassword([]byte(dto.password), bcrypt.DefaultCost)
 	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
 		http.Error(w, "Password is too long", http.StatusBadRequest)
 		return
@@ -46,7 +44,12 @@ func (sh *signUpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = service.Create(dto.Username, string(pwd), []string{"user"}); err != nil {
+	user = &service.User{
+		Username: dto.username,
+		Password: string(pwd),
+		Roles:    []string{"user"},
+	}
+	if err = service.Create(user); err != nil {
 		log.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
