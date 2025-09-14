@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func getAuthDto(r *http.Request) (*authDto, int, error) {
-	var dto authDto
+func getSignInDto(r *http.Request) (*signInDto, int, error) {
+	var dto signInDto
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		return nil, http.StatusBadRequest, err
 	}

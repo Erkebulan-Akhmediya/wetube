@@ -4,7 +4,7 @@ import (
 	"mime/multipart"
 )
 
-type authDto struct {
+type signInDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
