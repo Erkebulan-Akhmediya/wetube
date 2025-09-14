@@ -1,10 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"mime/multipart"
 	"os"
+	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -28,4 +33,14 @@ func InitClient() {
 
 func Client() *minio.Client {
 	return client
+}
+
+func GenerateUniqueName(file io.Reader, fileHeader *multipart.FileHeader) (string, error) {
+	name := fileHeader.Filename
+	ext := filepath.Ext(name)
+	var fileBytes bytes.Buffer
+	if _, err := io.Copy(&fileBytes, file); err != nil {
+		return "", err
+	}
+	return uuid.NewSHA1(uuid.NameSpaceDNS, fileBytes.Bytes()).String() + ext, nil
 }

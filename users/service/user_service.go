@@ -1,13 +1,20 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
+	"mime/multipart"
+	"os"
 	"time"
 	"wetube/database"
+	fileService "wetube/files/service"
 	roleService "wetube/role/service"
+
+	"github.com/minio/minio-go/v7"
 )
 
 type User struct {
@@ -19,7 +26,7 @@ type User struct {
 	Roles     []string
 }
 
-func Create(user *User) error {
+func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) error {
 	if user.Roles == nil || len(user.Roles) == 0 {
 		return fmt.Errorf("no roles were provided for user with username %s", user.Username)
 	}
@@ -34,6 +41,30 @@ func Create(user *User) error {
 			_ = tx.Rollback()
 		}
 	}()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	fileName, err := fileService.GenerateUniqueName(bytes.NewReader(fileBytes), fileHeader)
+	if err != nil {
+		return err
+	}
+
+	_, err = fileService.Client().PutObject(
+		context.Background(),
+		os.Getenv("MINIO_BUCKET_NAME"),
+		fileName,
+		bytes.NewReader(fileBytes),
+		fileHeader.Size,
+		minio.PutObjectOptions{
+			ContentType: fileHeader.Header.Get("Content-Type"),
+		},
+	)
+	if err != nil {
+		return err
+	}
 
 	var userId int
 	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
