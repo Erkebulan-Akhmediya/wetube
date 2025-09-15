@@ -58,6 +58,14 @@ func handleFormData(w http.ResponseWriter, r *http.Request) (*formDataDto, bool)
 		return nil, false
 	}
 
+	dto := formDataDto{
+		username: r.FormValue("username"),
+		password: r.FormValue("password"),
+	}
+	if _, ok := r.MultipartForm.File["pfp"]; !ok {
+		return &dto, true
+	}
+
 	f, h, err := r.FormFile("pfp")
 	if err != nil {
 		log.Println("Error getting pfp file:", err)
@@ -65,11 +73,7 @@ func handleFormData(w http.ResponseWriter, r *http.Request) (*formDataDto, bool)
 		return nil, false
 	}
 
-	dto := formDataDto{
-		username:  r.FormValue("username"),
-		password:  r.FormValue("password"),
-		pfp:       f,
-		pfpHeader: h,
-	}
+	dto.pfp = f
+	dto.pfpHeader = h
 	return &dto, true
 }
