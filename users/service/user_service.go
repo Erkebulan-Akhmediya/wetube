@@ -42,6 +42,26 @@ func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) e
 		}
 	}()
 
+	if file != nil && fileHeader != nil {
+		if err = uploadPfp(file, fileHeader); err != nil {
+			return err
+		}
+	}
+
+	var userId int
+	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
+	if err = tx.QueryRow(query, user.Username, user.Password).Scan(&userId); err != nil {
+		return err
+	}
+
+	if err = roleService.AddUserRoles(tx, userId, user.Roles); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func uploadPfp(file multipart.File, fileHeader *multipart.FileHeader) error {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return err
@@ -62,21 +82,7 @@ func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) e
 			ContentType: fileHeader.Header.Get("Content-Type"),
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	var userId int
-	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
-	if err = tx.QueryRow(query, user.Username, user.Password).Scan(&userId); err != nil {
-		return err
-	}
-
-	if err = roleService.AddUserRoles(tx, userId, user.Roles); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return err
 }
 
 func Update(user *User) error {

@@ -4,7 +4,7 @@ import (
 	"mime/multipart"
 )
 
-type signInDto struct {
+type jsonDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -14,7 +14,7 @@ type jwtDto struct {
 	Id    int    `json:"id"`
 }
 
-type signUpDto struct {
+type formDataDto struct {
 	username  string
 	password  string
 	pfp       multipart.File
