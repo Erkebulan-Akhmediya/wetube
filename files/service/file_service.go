@@ -27,7 +27,7 @@ func InitClient() {
 		Creds: credentials.NewStaticV4(minioUser, minioPassword, ""),
 	}
 	if client, err = minio.New(minioAddr, minioOptions); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error initializing minio client: %v", err)
 	}
 }
 
