@@ -1,13 +1,20 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
+	"mime/multipart"
+	"os"
 	"time"
 	"wetube/database"
+	fileService "wetube/files/service"
 	roleService "wetube/role/service"
+
+	"github.com/minio/minio-go/v7"
 )
 
 type User struct {
@@ -19,9 +26,9 @@ type User struct {
 	Roles     []string
 }
 
-func Create(username, password string, roles []string) error {
-	if roles == nil || len(roles) == 0 {
-		return fmt.Errorf("no roles were provided for user with username %s", username)
+func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) error {
+	if user.Roles == nil || len(user.Roles) == 0 {
+		return fmt.Errorf("no roles were provided for user with username %s", user.Username)
 	}
 
 	tx, err := database.Db().Begin()
@@ -35,17 +42,47 @@ func Create(username, password string, roles []string) error {
 		}
 	}()
 
+	if file != nil && fileHeader != nil {
+		if err = uploadPfp(file, fileHeader); err != nil {
+			return err
+		}
+	}
+
 	var userId int
 	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
-	if err = tx.QueryRow(query, username, password).Scan(&userId); err != nil {
+	if err = tx.QueryRow(query, user.Username, user.Password).Scan(&userId); err != nil {
 		return err
 	}
 
-	if err = roleService.AddUserRoles(tx, userId, roles); err != nil {
+	if err = roleService.AddUserRoles(tx, userId, user.Roles); err != nil {
 		return err
 	}
 
 	return tx.Commit()
+}
+
+func uploadPfp(file multipart.File, fileHeader *multipart.FileHeader) error {
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	fileName, err := fileService.GenerateUniqueName(bytes.NewReader(fileBytes), fileHeader)
+	if err != nil {
+		return err
+	}
+
+	_, err = fileService.Client().PutObject(
+		context.Background(),
+		os.Getenv("MINIO_BUCKET_NAME"),
+		fileName,
+		bytes.NewReader(fileBytes),
+		fileHeader.Size,
+		minio.PutObjectOptions{
+			ContentType: fileHeader.Header.Get("Content-Type"),
+		},
+	)
+	return err
 }
 
 func Update(user *User) error {

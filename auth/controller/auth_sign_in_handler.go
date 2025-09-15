@@ -17,7 +17,7 @@ func NewSignInHandler() http.Handler {
 type signInHandler struct{}
 
 func (sh *signInHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dto, code, err := getAuthDto(r)
+	dto, code, err := getSignInDto(r)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), code)

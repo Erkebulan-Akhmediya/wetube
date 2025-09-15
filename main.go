@@ -12,6 +12,7 @@ import (
 	"wetube/auth"
 	"wetube/channel"
 	"wetube/database"
+	fileService "wetube/files/service"
 	"wetube/role"
 	roleService "wetube/role/service"
 	"wetube/users"
@@ -27,7 +28,9 @@ func main() {
 			log.Fatal("Error closing db: " + err.Error())
 		}
 	}()
+
 	registerRoutes()
+	fileService.InitClient()
 
 	if err := roleService.CreateAll(); err != nil {
 		log.Println("Error creating role: " + err.Error())
