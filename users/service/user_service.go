@@ -24,6 +24,7 @@ type User struct {
 	CreatedAt time.Time
 	DeletedAt sql.NullTime
 	Roles     []string
+	PFP       sql.NullString
 }
 
 func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) error {
@@ -42,15 +43,16 @@ func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) e
 		}
 	}()
 
+	var pfp string
 	if file != nil && fileHeader != nil {
-		if err = uploadPfp(file, fileHeader); err != nil {
+		pfp, err = uploadPfp(file, fileHeader)
+		if err != nil {
 			return err
 		}
 	}
 
-	var userId int
-	query := `INSERT INTO "user" (username, password) VALUES ($1, $2) RETURNING id`
-	if err = tx.QueryRow(query, user.Username, user.Password).Scan(&userId); err != nil {
+	userId, err := create(tx, user, pfp)
+	if err != nil {
 		return err
 	}
 
@@ -61,15 +63,15 @@ func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) e
 	return tx.Commit()
 }
 
-func uploadPfp(file multipart.File, fileHeader *multipart.FileHeader) error {
+func uploadPfp(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	fileName, err := fileService.GenerateUniqueName(bytes.NewReader(fileBytes), fileHeader)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	_, err = fileService.Client().PutObject(
@@ -82,7 +84,22 @@ func uploadPfp(file multipart.File, fileHeader *multipart.FileHeader) error {
 			ContentType: fileHeader.Header.Get("Content-Type"),
 		},
 	)
-	return err
+	return fileName, err
+}
+
+func create(tx *sql.Tx, user *User, pfp string) (int, error) {
+	var userId int
+	query := `INSERT INTO "user" (username, password, pfp) VALUES ($1, $2, $3) RETURNING id`
+	var row *sql.Row
+	if pfp != "" {
+		row = tx.QueryRow(query, user.Username, user.Password, pfp)
+	} else {
+		row = tx.QueryRow(query, user.Username, user.Password, nil)
+	}
+	if err := row.Scan(&userId); err != nil {
+		return -1, err
+	}
+	return userId, nil
 }
 
 func Update(user *User) error {

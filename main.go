@@ -12,6 +12,7 @@ import (
 	"wetube/auth"
 	"wetube/channel"
 	"wetube/database"
+	"wetube/files"
 	fileService "wetube/files/service"
 	"wetube/role"
 	roleService "wetube/role/service"
@@ -75,4 +76,5 @@ func registerRoutes() {
 	users.RegisterRoutes()
 	channel.RegisterRoutes()
 	role.RegisterRoutes()
+	files.RegisterRoutes()
 }

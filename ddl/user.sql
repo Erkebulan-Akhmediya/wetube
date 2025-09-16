@@ -6,5 +6,6 @@ create table "user"
     username   varchar(100) not null unique,
     password   varchar(100) not null,
     created_at date         not null default now(),
-    deleted_at date
+    deleted_at date,
+    pfp        varchar(64)
 );

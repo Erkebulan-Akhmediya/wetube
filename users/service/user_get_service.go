@@ -13,7 +13,8 @@ select u.id,
        u.password,
        u.created_at,
        u.deleted_at,
-       coalesce(array_agg(r.name) filter (where r.name is not null), ARRAY[]::varchar(10)[]) roles
+       coalesce(array_agg(r.name) filter (where r.name is not null), ARRAY[]::varchar(10)[]) roles,
+       u.pfp
 from "user" u
          left join users_roles ur on u.id = ur.user_id
          left join role r on ur.role_name = r.name
@@ -33,7 +34,15 @@ func GetByUsername(username string) (*User, error) {
 func get(query string, args ...any) (*User, error) {
 	var user User
 	row := database.Db().QueryRow(query, args...)
-	err := row.Scan(&user.Id, &user.Username, &user.Password, &user.CreatedAt, &user.DeletedAt, pq.Array(&user.Roles))
+	err := row.Scan(
+		&user.Id,
+		&user.Username,
+		&user.Password,
+		&user.CreatedAt,
+		&user.DeletedAt,
+		pq.Array(&user.Roles),
+		&user.PFP,
+	)
 	if err != nil {
 		return nil, err
 	}

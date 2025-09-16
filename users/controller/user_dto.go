@@ -11,6 +11,7 @@ type userDto struct {
 	Password  string `json:"password,omitempty"`
 	CreatedAt string `json:"createdAt"`
 	DeletedAt string `json:"deletedAt,omitempty"`
+	PFP       string `json:"pfp,omitempty"`
 }
 
 func newUserDto(user *service.User) *userDto {
@@ -21,6 +22,9 @@ func newUserDto(user *service.User) *userDto {
 	}
 	if user.DeletedAt.Valid {
 		dto.DeletedAt = user.DeletedAt.Time.Format(time.DateOnly)
+	}
+	if user.PFP.Valid {
+		dto.PFP = user.PFP.String
 	}
 	return &dto
 }
