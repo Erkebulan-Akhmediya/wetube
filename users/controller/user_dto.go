@@ -19,10 +19,12 @@ func newUserDto(user *service.User) *userDto {
 		Id:        user.Id,
 		Username:  user.Username,
 		CreatedAt: user.CreatedAt.Format(time.DateOnly),
-		PFP:       user.PFP,
 	}
 	if user.DeletedAt.Valid {
 		dto.DeletedAt = user.DeletedAt.Time.Format(time.DateOnly)
+	}
+	if user.PFP.Valid {
+		dto.PFP = user.PFP.String
 	}
 	return &dto
 }
