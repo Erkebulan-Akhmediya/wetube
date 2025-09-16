@@ -24,6 +24,7 @@ type User struct {
 	CreatedAt time.Time
 	DeletedAt sql.NullTime
 	Roles     []string
+	PFP       string
 }
 
 func Create(user *User, file multipart.File, fileHeader *multipart.FileHeader) error {
