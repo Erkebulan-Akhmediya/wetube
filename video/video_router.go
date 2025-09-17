@@ -3,6 +3,7 @@ package video
 import (
 	"net/http"
 	authMiddleware "wetube/auth/middleware"
+	channelMiddleware "wetube/channel/middleware"
 	"wetube/utils"
 	"wetube/video/controller"
 )
@@ -13,9 +14,10 @@ func RegisterRoutes() {
 
 func registerVideoHandlers() {
 	uploadHandler := controller.NewUploadHandler()
+	uploadHandler = channelMiddleware.NewIsOwnerMiddleware(uploadHandler)
 	uploadHandler = authMiddleware.NewAuthMiddleware(uploadHandler)
 	videoHandlers := utils.MethodHandler{
 		http.MethodPost: uploadHandler,
 	}
-	http.Handle("/video", videoHandlers)
+	http.Handle("/channel/{channelId}/video", videoHandlers)
 }

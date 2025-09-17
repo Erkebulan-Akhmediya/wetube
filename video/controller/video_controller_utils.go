@@ -4,9 +4,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"wetube/video/controller/dto"
 )
 
-func getVideoDto(w http.ResponseWriter, r *http.Request) (*VideoDto, bool) {
+func getVideoDto(w http.ResponseWriter, r *http.Request) (*dto.VideoDto, bool) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<21)
 	if err := r.ParseMultipartForm(10 << 21); err != nil {
 		log.Println("Error parsing multipart form:", err)
@@ -29,12 +30,12 @@ func getVideoDto(w http.ResponseWriter, r *http.Request) (*VideoDto, bool) {
 		return nil, false
 	}
 
-	dto := VideoDto{
+	videoDto := dto.VideoDto{
 		ChannelId:   channelId,
 		Name:        r.FormValue("name"),
 		Description: r.FormValue("description"),
 		File:        f,
 		FileHeader:  h,
 	}
-	return &dto, true
+	return &videoDto, true
 }
