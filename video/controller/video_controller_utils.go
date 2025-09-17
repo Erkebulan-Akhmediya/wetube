@@ -22,7 +22,7 @@ func getVideoDto(w http.ResponseWriter, r *http.Request) (*dto.VideoDto, bool) {
 		return nil, false
 	}
 
-	channelIdStr := r.FormValue("channelId")
+	channelIdStr := r.PathValue("channelId")
 	channelId, err := strconv.Atoi(channelIdStr)
 	if err != nil {
 		log.Println("Error converting channelId to int:", err)
