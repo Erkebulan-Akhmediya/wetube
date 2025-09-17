@@ -1,0 +1,7 @@
+### Example environment variables
+- JWT_SECRET_KEY
+- MINIO_BUCKET_NAME
+- MINIO_HOST
+- MINIO_PASSWORD
+- MINIO_PORT
+- MINIO_USER
