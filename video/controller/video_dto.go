@@ -2,7 +2,8 @@ package controller
 
 import "mime/multipart"
 
-type videoDto struct {
+type VideoDto struct {
+	ChannelId   int
 	Name        string
 	Description string
 	File        multipart.File
