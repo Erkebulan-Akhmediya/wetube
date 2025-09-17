@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -43,4 +44,28 @@ func GenerateUniqueName(file io.Reader, fileHeader *multipart.FileHeader) (strin
 		return "", err
 	}
 	return uuid.NewSHA1(uuid.NameSpaceDNS, fileBytes.Bytes()).String() + ext, nil
+}
+
+func Upload(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	fileName, err := GenerateUniqueName(bytes.NewReader(fileBytes), fileHeader)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = client.PutObject(
+		context.Background(),
+		os.Getenv("MINIO_BUCKET_NAME"),
+		fileName,
+		bytes.NewReader(fileBytes),
+		fileHeader.Size,
+		minio.PutObjectOptions{
+			ContentType: fileHeader.Header.Get("Content-Type"),
+		},
+	)
+	return fileName, err
 }
