@@ -8,6 +8,7 @@ import (
 )
 
 type Channel struct {
+	Id        int
 	Name      string
 	Author    *service.User
 	CreatedAt time.Time
