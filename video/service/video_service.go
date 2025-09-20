@@ -14,7 +14,7 @@ type Video struct {
 	ChannelId   int
 }
 
-func Create(dto *dto.VideoDto) error {
+func Create(dto *dto.UploadVideoDto) error {
 	fileName, err := fileService.Upload(dto.File, dto.FileHeader)
 	if err != nil {
 		return err
