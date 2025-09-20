@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"wetube/video/controller/dto"
 	"wetube/video/service"
 )
 
@@ -30,7 +31,19 @@ func (g *getByChannelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(videos); err != nil {
+	var videoDtos []dto.GetVideoDto
+	for _, video := range videos {
+		videoDto := dto.GetVideoDto{
+			Id:          video.Id,
+			Name:        video.Name,
+			Description: video.Description,
+			File:        video.File,
+			ChannelId:   video.ChannelId,
+		}
+		videoDtos = append(videoDtos, videoDto)
+	}
+
+	if err = json.NewEncoder(w).Encode(videoDtos); err != nil {
 		log.Println(err)
 		http.Error(w, "Failed to send videos", http.StatusInternalServerError)
 		return
