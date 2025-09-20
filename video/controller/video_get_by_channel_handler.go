@@ -1,7 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
+	"strconv"
+	"wetube/video/service"
 )
 
 func NewGetByChannelHandler() http.Handler {
@@ -11,6 +15,24 @@ func NewGetByChannelHandler() http.Handler {
 type getByChannelHandler struct{}
 
 func (g *getByChannelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	channelIdStr := r.PathValue("channelId")
+	channelId, err := strconv.Atoi(channelIdStr)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid channel id", http.StatusBadRequest)
+		return
+	}
+
+	videos, err := service.GetByChannelId(channelId)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Failed to get videos", http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(videos); err != nil {
+		log.Println(err)
+		http.Error(w, "Failed to send videos", http.StatusInternalServerError)
+		return
+	}
 }
