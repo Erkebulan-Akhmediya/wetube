@@ -33,3 +33,21 @@ func create(video *Video) error {
 	_, err := database.Db().Exec(query, video.Name, video.Description, video.ChannelId, video.File)
 	return err
 }
+
+func GetByChannelId(channelId int) ([]*Video, error) {
+	query := `SELECT id, name, description, file, channel_id FROM video WHERE channel_id = $1`
+	var videos []*Video
+	rows, err := database.Db().Query(query, channelId)
+	if err != nil {
+		return videos, err
+	}
+	for rows.Next() {
+		var video Video
+		err = rows.Scan(&video.Id, &video.Name, &video.Description, &video.File, &video.ChannelId)
+		if err != nil {
+			return videos, err
+		}
+		videos = append(videos, &video)
+	}
+	return videos, nil
+}
