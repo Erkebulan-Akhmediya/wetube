@@ -16,7 +16,10 @@ func registerVideoHandlers() {
 	uploadHandler := controller.NewUploadHandler()
 	uploadHandler = channelMiddleware.NewIsOwnerMiddleware(uploadHandler)
 	uploadHandler = authMiddleware.NewAuthMiddleware(uploadHandler)
+
+	getByChannelHandler := controller.NewGetByChannelHandler()
 	videoHandlers := utils.MethodHandler{
+		http.MethodGet:  getByChannelHandler,
 		http.MethodPost: uploadHandler,
 	}
 	http.Handle("/channel/{channelId}/video", videoHandlers)
